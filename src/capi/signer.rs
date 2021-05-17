@@ -16,16 +16,16 @@ use libc::c_char;
 use rand::RngCore;
 use std::ffi::{CStr, CString};
 use std::ops::Try;
-use std::slice;
+// use std::slice;
 use std::str::{FromStr, Utf8Error};
 
-use bip39::Mnemonic;
+// use bip39::Mnemonic;
 use bitcoin::consensus::{deserialize, serialize};
 use bitcoin::util::address;
 use bitcoin::util::bip32::{
     self, ChildNumber, DerivationPath, Error, ExtendedPrivKey, ExtendedPubKey,
 };
-use bitcoin::Network;
+// use bitcoin::Network;
 use wallet::bip32::{
     BranchStep, ChildIndex, HardenedNormalSplit, PubkeyChain, TerminalStep,
     XpubRef,
@@ -288,83 +288,83 @@ pub unsafe extern "C" fn result_destroy(result: string_result_t) {
     cs.wipe();
 }
 
-/// Creates a rust-owned mnemonic string. You MUSt always call
-/// [`string_destroy`] right after storing the mnemonic string and
-/// do not call other methods from this library on that mnemonic. If you need
-/// to call [`bip39_master_xpriv`] you MUST read mnemonic again and provide
-/// unowned string to the rust.
-#[no_mangle]
-pub extern "C" fn bip39_mnemonic_create(
-    entropy: *const u8,
-    mnemonic_type: bip39_mnemonic_type,
-) -> string_result_t {
-    let entropy = if entropy.is_null() {
-        let mut inner = vec![0u8; mnemonic_type.byte_len()];
-        rand::thread_rng().fill_bytes(&mut inner);
-        inner
-    } else {
-        unsafe { slice::from_raw_parts(entropy, mnemonic_type.byte_len()) }
-            .to_vec()
-    };
-    let mnemonic = bip39::Mnemonic::from_entropy(&entropy)?;
-    string_result_t::success(mnemonic.as_str())
-}
+// /// Creates a rust-owned mnemonic string. You MUSt always call
+// /// [`string_destroy`] right after storing the mnemonic string and
+// /// do not call other methods from this library on that mnemonic. If you need
+// /// to call [`bip39_master_xpriv`] you MUST read mnemonic again and provide
+// /// unowned string to the rust.
+// #[no_mangle]
+// pub extern "C" fn bip39_mnemonic_create(
+//     entropy: *const u8,
+//     mnemonic_type: bip39_mnemonic_type,
+// ) -> string_result_t {
+//     let entropy = if entropy.is_null() {
+//         let mut inner = vec![0u8; mnemonic_type.byte_len()];
+//         rand::thread_rng().fill_bytes(&mut inner);
+//         inner
+//     } else {
+//         unsafe { slice::from_raw_parts(entropy, mnemonic_type.byte_len()) }
+//             .to_vec()
+//     };
+//     let mnemonic = bip39::Mnemonic::from_entropy(&entropy)?;
+//     string_result_t::success(mnemonic.as_str())
+// }
 
-#[no_mangle]
-pub extern "C" fn bip39_master_xpriv(
-    seed_phrase: *mut c_char,
-    passwd: *mut c_char,
-    wipe: bool,
-    testnet: bool,
-) -> string_result_t {
-    if seed_phrase.is_null() {
-        Err(err_type::null_pointer)?
-    }
+// #[no_mangle]
+// pub extern "C" fn bip39_master_xpriv(
+//     seed_phrase: *mut c_char,
+//     passwd: *mut c_char,
+//     wipe: bool,
+//     testnet: bool,
+// ) -> string_result_t {
+//     if seed_phrase.is_null() {
+//         Err(err_type::null_pointer)?
+//     }
 
-    let password = if passwd.is_null() {
-        ""
-    } else {
-        unsafe { CStr::from_ptr(passwd).to_str()? }
-    };
+//     let password = if passwd.is_null() {
+//         ""
+//     } else {
+//         unsafe { CStr::from_ptr(passwd).to_str()? }
+//     };
 
-    let mut seed = {
-        let seed_phrase = unsafe { CString::from_raw(seed_phrase) };
-        let mnemonic = Mnemonic::from_str(seed_phrase.to_str()?)?;
-        let seed = mnemonic.to_seed(&password);
-        if wipe {
-            let len = mnemonic.as_str().len();
-            let ptr = mnemonic.as_str().as_ptr() as *mut c_char;
-            for i in 0..len as isize {
-                unsafe { *ptr.offset(i) = 0 };
-            }
-            unsafe { seed_phrase.wipe() };
-        }
-        seed
-    };
-    let mut xpriv = ExtendedPrivKey::new_master(
-        if testnet {
-            Network::Testnet
-        } else {
-            Network::Bitcoin
-        },
-        &seed,
-    )?;
-    seed.fill(0u8);
-    if wipe && !passwd.is_null() {
-        let len = password.len();
-        for i in 0..len as isize {
-            unsafe { *passwd.offset(i) = 0 };
-        }
-    }
-    let xpriv_str = xpriv.to_string();
-    let ptr = xpriv.private_key.key.as_mut_ptr();
-    for i in 0..32 {
-        unsafe {
-            *ptr.offset(i) = 0;
-        }
-    }
-    string_result_t::success(&xpriv_str)
-}
+//     let mut seed = {
+//         let seed_phrase = unsafe { CString::from_raw(seed_phrase) };
+//         let mnemonic = Mnemonic::from_str(seed_phrase.to_str()?)?;
+//         let seed = mnemonic.to_seed(&password);
+//         if wipe {
+//             let len = mnemonic.as_str().len();
+//             let ptr = mnemonic.as_str().as_ptr() as *mut c_char;
+//             for i in 0..len as isize {
+//                 unsafe { *ptr.offset(i) = 0 };
+//             }
+//             unsafe { seed_phrase.wipe() };
+//         }
+//         seed
+//     };
+//     let mut xpriv = ExtendedPrivKey::new_master(
+//         if testnet {
+//             Network::Testnet
+//         } else {
+//             Network::Bitcoin
+//         },
+//         &seed,
+//     )?;
+//     seed.fill(0u8);
+//     if wipe && !passwd.is_null() {
+//         let len = password.len();
+//         for i in 0..len as isize {
+//             unsafe { *passwd.offset(i) = 0 };
+//         }
+//     }
+//     let xpriv_str = xpriv.to_string();
+//     let ptr = xpriv.private_key.key.as_mut_ptr();
+//     for i in 0..32 {
+//         unsafe {
+//             *ptr.offset(i) = 0;
+//         }
+//     }
+//     string_result_t::success(&xpriv_str)
+// }
 
 #[no_mangle]
 pub extern "C" fn bip32_scoped_xpriv(

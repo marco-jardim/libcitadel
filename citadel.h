@@ -84,14 +84,6 @@
 
 #define ERRNO_NULL 105
 
-typedef enum bip39_mnemonic_type {
-        BIP39_MNEMONIC_TYPE_WORDS_12,
-        BIP39_MNEMONIC_TYPE_WORDS_15,
-        BIP39_MNEMONIC_TYPE_WORDS_18,
-        BIP39_MNEMONIC_TYPE_WORDS_21,
-        BIP39_MNEMONIC_TYPE_WORDS_24,
-} bip39_mnemonic_type;
-
 typedef enum descriptor_type {
         DESCRIPTOR_TYPE_BARE,
         DESCRIPTOR_TYPE_HASHED,
@@ -290,21 +282,6 @@ const char *citadel_asset_import(struct citadel_client_t *client,
 bool is_success(struct string_result_t result);
 
 void result_destroy(struct string_result_t result);
-
-/**
- * Creates a rust-owned mnemonic string. You MUSt always call
- * [`string_destroy`] right after storing the mnemonic string and
- * do not call other methods from this library on that mnemonic. If you need
- * to call [`bip39_master_xpriv`] you MUST read mnemonic again and provide
- * unowned string to the rust.
- */
-struct string_result_t bip39_mnemonic_create(const uint8_t *entropy,
-                                             enum bip39_mnemonic_type mnemonic_type);
-
-struct string_result_t bip39_master_xpriv(char *seed_phrase,
-                                          char *passwd,
-                                          bool wipe,
-                                          bool testnet);
 
 struct string_result_t bip32_scoped_xpriv(const char *master,
                                           bool clean,
