@@ -17,15 +17,15 @@ use citadel::{rpc, Client, Error};
 use crate::error::*;
 use crate::{TryAsStr, TryIntoRaw, TryIntoString};
 
-#[allow(non_camel_case_types)]
-#[repr(C)]
 pub struct citadel_client_t {
     opaque: *mut c_void,
     message: *const c_char,
     err_no: c_int,
 }
 
+#[node_bindgen]
 impl citadel_client_t {
+    #[node_bindgen]
     pub(crate) fn with(inner_client: Client) -> *mut Self {
         let client = citadel_client_t {
             opaque: Box::into_raw(Box::new(inner_client)) as *mut c_void,
@@ -35,6 +35,7 @@ impl citadel_client_t {
         Box::into_raw(Box::new(client))
     }
 
+    #[node_bindgen]
     pub(crate) fn from_err(error: citadel::Error) -> *mut Self {
         let mut client = citadel_client_t {
             opaque: ptr::null_mut(),
@@ -45,6 +46,7 @@ impl citadel_client_t {
         Box::into_raw(Box::new(client))
     }
 
+    #[node_bindgen]
     pub(crate) fn from_custom_err(err_no: c_int, msg: &str) -> *mut Self {
         let mut client = citadel_client_t {
             opaque: ptr::null_mut(),
@@ -55,10 +57,12 @@ impl citadel_client_t {
         Box::into_raw(Box::new(client))
     }
 
+    #[node_bindgen]
     pub(crate) fn from_raw(client: *mut Self) -> &'static mut Self {
         unsafe { client.as_mut() }.expect("Wrong Citadel client pointer")
     }
 
+    #[node_bindgen]
     pub(crate) fn try_as_opaque(&mut self) -> Option<&mut Client> {
         if self.opaque.is_null() {
             self.set_error_no(ERRNO_UNINIT);
@@ -68,17 +72,20 @@ impl citadel_client_t {
         Some(Box::leak(boxed))
     }
 
+    #[node_bindgen]
     fn drop_message(&mut self) -> bool {
         let status = (self.message as *mut c_char).try_into_string().is_some();
         self.message = ptr::null();
         status
     }
 
+    #[node_bindgen]
     pub(crate) fn set_success(&mut self) {
         self.err_no = SUCCESS;
         self.drop_message();
     }
 
+    #[node_bindgen]
     pub(crate) fn set_error_details(
         &mut self,
         err_no: c_int,
@@ -92,6 +99,7 @@ impl citadel_client_t {
             .unwrap_or("unparsable failure message".as_ptr() as *const c_char);
     }
 
+    #[node_bindgen]
     pub(crate) fn set_error_no(&mut self, err_no: c_int) {
         let message = match err_no {
             ERRNO_UNINIT => "Citadel client is not yet initialized",
@@ -101,6 +109,7 @@ impl citadel_client_t {
         self.set_error_details(err_no, message);
     }
 
+    #[node_bindgen]
     pub(crate) fn set_error(&mut self, err: citadel::Error) {
         let err_no = match err {
             Error::Io(_) => ERRNO_IO,
@@ -116,18 +125,22 @@ impl citadel_client_t {
         self.set_error_details(err_no, &err.to_string());
     }
 
+    #[node_bindgen]
     pub(crate) fn set_failure(&mut self, failure: microservices::rpc::Failure) {
         self.set_error_details(ERRNO_SERVERFAIL, failure);
     }
 
+    #[node_bindgen]
     pub(crate) fn is_ok(&self) -> bool {
         self.message.is_null() && self.err_no == SUCCESS
     }
 
+    #[node_bindgen]
     pub(crate) fn has_err(&self) -> bool {
         self.err_no != SUCCESS && !self.message.is_null()
     }
 
+    #[node_bindgen]
     pub(crate) fn process_response(
         &mut self,
         response: Result<rpc::Reply, Error>,
@@ -161,6 +174,7 @@ impl citadel_client_t {
             .unwrap_or(ptr::null())
     }
 
+    #[node_bindgen]
     pub(crate) fn parse_string<'a>(
         &mut self,
         s: *const c_char,
@@ -175,6 +189,7 @@ impl citadel_client_t {
         }
     }
 
+    #[node_bindgen]
     pub(crate) fn parse_contract_id(
         &mut self,
         bech32: *const c_char,
@@ -193,6 +208,7 @@ impl citadel_client_t {
         }
     }
 
+    #[node_bindgen]
     pub(crate) fn parse_asset_id(
         &mut self,
         bech32: *const c_char,
